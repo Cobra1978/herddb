@@ -48,6 +48,8 @@ import herddb.index.PrimaryIndexSeek;
 import herddb.index.blink.BLink.SizeEvaluator;
 import herddb.index.blink.BLinkMetadata.BLinkNodeMetadata;
 import herddb.log.LogSequenceNumber;
+import herddb.model.InvalidNullValueForKeyException;
+import herddb.model.RecordFunction;
 import herddb.model.StatementEvaluationContext;
 import herddb.model.StatementExecutionException;
 import herddb.model.TableContext;
@@ -152,7 +154,7 @@ public class BLinkKeyToPageIndex implements KeyToPageIndex {
         TableContext tableContext, AbstractIndexManager index) throws DataStorageManagerException, StatementExecutionException {
         if (operation instanceof PrimaryIndexSeek) {
             PrimaryIndexSeek seek = (PrimaryIndexSeek) operation;
-            byte[] seekValue = seek.value.computeNewValue(null, context, tableContext);
+            byte[] seekValue = computeKeyValue(seek.value, context, tableContext);
             if (seekValue == null) {
                 return Stream.empty();
             }
@@ -168,7 +170,10 @@ public class BLinkKeyToPageIndex implements KeyToPageIndex {
 
             PrimaryIndexPrefixScan scan = (PrimaryIndexPrefixScan) operation;
 //            SQLRecordKeyFunction value = sis.value;
-            byte[] refvalue = scan.value.computeNewValue(null, context, tableContext);
+            byte[] refvalue = computeKeyValue(scan.value, context, tableContext);
+            if (refvalue == null) {
+                return Stream.empty();
+            }
             Bytes firstKey = Bytes.from_array(refvalue);
             Bytes lastKey = firstKey.next();
 
@@ -208,6 +213,16 @@ public class BLinkKeyToPageIndex implements KeyToPageIndex {
 
     }
 
+    private static byte[] computeKeyValue(RecordFunction keyFun, StatementEvaluationContext context, TableContext tableContext) throws StatementExecutionException {
+        try {
+            return keyFun.computeNewValue(null, context, tableContext);
+        } catch (InvalidNullValueForKeyException invalidKeyValueException) {
+            // select * from table where k=null
+            // select * from table where firstColumnInKey=null
+            return null;
+        }
+    }
+
     @Override
     public void close() throws DataStorageManagerException {
 
@@ -226,7 +241,7 @@ public class BLinkKeyToPageIndex implements KeyToPageIndex {
     public void truncate() {
         getTree().truncate();
     }
-    
+
     @Override
     public void dropData() {
         truncate();

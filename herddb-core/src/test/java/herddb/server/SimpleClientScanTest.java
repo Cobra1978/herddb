@@ -84,6 +84,8 @@ public class SimpleClientScanTest {
                 assertEquals(1, connection.executeScan(TableSpace.DEFAULT, "SELECT count(*) FROM mytable WHERE id='test_1'", true, Collections.emptyList(), tx, 0, 10).consume().size());
                 connection.rollbackTransaction(TableSpace.DEFAULT, tx);
 
+                assertEquals(0, connection.executeScan(TableSpace.DEFAULT, "SELECT * FROM mytable WHERE id=?", true, Arrays.<Object>asList( (Object) null), 0, 0, 10).consume().size());
+
             }
         }
     }
