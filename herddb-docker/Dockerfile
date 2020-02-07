@@ -30,8 +30,8 @@ RUN set -eux; \
 # Verify that gosu binary works
     gosu nobody true
 
-ARG DISTRO_VERSION=0.12.0
-ARG DISTRO_NAME=herddb-services-0.12.0
+ARG DISTRO_VERSION=0.13.1
+ARG DISTRO_NAME=herddb-services-0.13.1
 
 # Download HerdDb, verify its PGP signature, untar and clean up
 RUN set -eux; \
@@ -55,4 +55,4 @@ EXPOSE 7000
 COPY docker-entrypoint.sh /
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["service","server","console","--use-env"]
+CMD ["bin/service","server","console","--use-env"]
